@@ -234,7 +234,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 settings: settings,
                 logger: logger,
                 onGroup: group,
-                resolver: self.dns,
+                resolver: nil,
                 sessionManager: sessionManager
             )
             connection.slaveOk.store(slaveOk)
