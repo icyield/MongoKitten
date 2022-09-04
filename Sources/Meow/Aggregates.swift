@@ -202,15 +202,22 @@ public struct Limit<Base: Codable>: AggregateBuilderStage {
 
 extension Limit: MeowAggregateStage where Base: KeyPathQueryable {}
 
-public struct Unwind<Base: KeyPathQueryableModel, Result: KeyPathQueryableModel>: MeowAggregateStage {
+public struct Unwind<Base: Codable, Result: Codable>: MeowAggregateStage {
     let unwind: MongoKitten.Unwind
     public var stage: Document { unwind.stage }
     public var minimalVersionRequired: MongoCore.WireVersion? { unwind.minimalVersionRequired }
     
+    @_disfavoredOverload
+    public init(
+        fieldPath: FieldPathResolvable
+    ) where Base == Document, Result == Document {
+        self.unwind = .init(fieldPath: fieldPath.resolve())
+    }
+    
     public init<Value, Values: Sequence>(
         from base: KeyPath<Base, QueryableField<Values>>,
         into result: KeyPath<Result, QueryableField<Value>>
-    ) where Values.Element == Value {
+    ) where Values.Element == Value, Base: KeyPathQueryableModel, Result: KeyPathQueryableModel {
         let base = Base.resolveFieldPath(base)
         let result = Result.resolveFieldPath(result)
         
@@ -220,19 +227,61 @@ public struct Unwind<Base: KeyPathQueryableModel, Result: KeyPathQueryableModel>
     }
 }
 
-public struct Lookup<Base: Codable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable>: MeowAggregateStage {
+public struct Lookup<Base: Codable, Foreign: KeyPathQueryableModel, Result: Codable>: MeowAggregateStage {
     private let lookup: MongoKitten.Lookup
     public var stage: Document { lookup.stage }
     public var minimalVersionRequired: MongoCore.WireVersion? { lookup.minimalVersionRequired }
 }
 
+public protocol FieldPathResolvable {
+    func resolve() -> FieldPath
+}
+
+extension FieldPath: FieldPathResolvable {
+    public func resolve() -> FieldPath {
+        self
+    }
+}
+
+extension String: FieldPathResolvable {
+    public func resolve() -> FieldPath {
+        FieldPath(stringLiteral: self)
+    }
+}
+
+extension KeyPath: FieldPathResolvable where Root: Model {
+    public func resolve<T>() -> FieldPath where Value == QueryableField<T> {
+        FieldPath(components: Root.resolveFieldPath(self))
+    }
+    
+    @_disfavoredOverload
+    public func resolve() -> FieldPath {
+        fatalError("Cannot resolve non-queryable fields")
+    }
+}
+
 extension Lookup {
+    @_disfavoredOverload
+    public init(
+        form type: Foreign.Type,
+        localField: FieldPathResolvable,
+        foreignField: FieldPathResolvable,
+        as asField: FieldPathResolvable
+    ) where Base: KeyPathQueryableModel, Result == Document {
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localField.resolve(),
+            foreignField: foreignField.resolve(),
+            as: asField.resolve()
+        )
+    }
+    
     public init<FieldValue, FieldValues>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<FieldValue>>,
         foreignField: KeyPath<Foreign, QueryableField<FieldValue>>,
         as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
@@ -249,7 +298,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
         as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -265,7 +314,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
         as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -281,7 +330,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
         as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -297,7 +346,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
         as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -313,7 +362,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
         as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -329,7 +378,7 @@ extension Lookup {
         from type: Foreign.Type,
         localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
         as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
         
@@ -346,7 +395,7 @@ extension Lookup {
         localField: KeyPath<Base, QueryableField<FieldValue>>,
         foreignField: KeyPath<Foreign, QueryableField<FieldValue>>,
         as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign, Result: KeyPathQueryable {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
@@ -368,7 +417,7 @@ extension Lookup {
         foreignField: KeyPath<Foreign, QueryableField<Match>>,
         @MeowCheckedAggregateBuilder<Foreign> pipeline: () throws -> MeowAggregate<Foreign, Field>,
         as asField: KeyPath<Result, QueryableField<Field>>
-    ) rethrows where Base: KeyPathQueryableModel {
+    ) rethrows where Base: KeyPathQueryableModel, Result: KeyPathQueryable {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
@@ -391,7 +440,7 @@ extension Lookup {
         foreignField: KeyPath<Foreign, QueryableField<Reference<M>>>,
         @MeowCheckedAggregateBuilder<Foreign> pipeline: () throws -> MeowAggregate<Foreign, Field>,
         as asField: KeyPath<Result, QueryableField<Fields>>
-    ) rethrows where Base: KeyPathQueryableModel, Fields.Element == Field {
+    ) rethrows where Base: KeyPathQueryableModel, Fields.Element == Field, Result: KeyPathQueryable {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
