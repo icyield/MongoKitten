@@ -1,4 +1,5 @@
 import BSON
+import MongoKitten
 
 /// A helper type used in keypath queries that is used as a "virtual model" for constructing type-checked mongodb queries.
 ///
