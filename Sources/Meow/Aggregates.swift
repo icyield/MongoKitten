@@ -256,7 +256,7 @@ extension KeyPath: FieldPathResolvable where Root: Model {
     
     @_disfavoredOverload
     public func resolve() -> FieldPath {
-        fatalError("Cannot resolve non-queryable fields")
+        fatalError("If you've arrived here, please add `@Field` to all your \(Root.self) model's properties")
     }
 }
 

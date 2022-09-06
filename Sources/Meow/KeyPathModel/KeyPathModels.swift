@@ -126,7 +126,7 @@ extension KeyPathQueryableModel where Self: MutableModel {
     /// Constructs a partial (atomic) update to this model by allowing you to update individual values in this model
     /// Each value that's been updated will be `$set` in the database
     ///
-    /// Produces a `PartialUpdate` that can be executed as a query
+    /// Produces a ``PartialUpdate`` that can be executed as a query
     ///
     /// - Note:If the model is a class, the model will be updated before `PartialUpdate.apply` is called
     public func makePartialUpdate(_ mutate: (inout ModelUpdater<Self>) async throws -> Void) async rethrows -> PartialUpdate<Self> {
