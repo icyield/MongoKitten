@@ -81,12 +81,12 @@ let package = Package(
         ),
         .testTarget(
             name: "MongoCoreTests",
-            dependencies: ["MongoCore"]),
+            dependencies: ["MongoCore", .product(name: "Logging", package: "swift-log"),]),
         .testTarget(
             name: "MongoKittenTests",
-            dependencies: ["MongoKitten"]),
+            dependencies: ["MongoKitten", .product(name: "Logging", package: "swift-log")]),
         .testTarget(
             name: "MeowTests",
-            dependencies: ["Meow"]),
+            dependencies: ["Meow", .product(name: "Logging", package: "swift-log"),]),
     ]
 )
