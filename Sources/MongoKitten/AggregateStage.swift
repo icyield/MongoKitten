@@ -30,6 +30,15 @@ public struct AddFields: AggregateBuilderStage {
     }
 }
 
+public struct Group: AggregateBuilderStage {
+    public internal(set) var stage: Document
+    public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
+    
+    public init(_ fields: Document) {
+        self.stage = ["$group": fields]
+    }
+}
+
 public struct Project: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion?
